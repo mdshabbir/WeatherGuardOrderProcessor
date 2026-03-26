@@ -1,0 +1,28 @@
+{
+  "name": "weatherguard-order-processor",
+  "version": "1.0.0",
+  "description": "Processes customer orders against live weather data and generates delay apologies.",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "jest --runInBand"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "weather",
+    "orders",
+    "nodejs",
+    "openweathermap",
+    "jest"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
