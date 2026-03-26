@@ -2,8 +2,10 @@ const fs = require("fs/promises");
 const os = require("os");
 const path = require("path");
 const {
+  OLLAMA_API_URL,
   fetchWeather,
   generateApologyMessage,
+  generateTemplateApologyMessage,
   processOrders,
   run
 } = require("../main");
@@ -52,11 +54,35 @@ describe("WeatherGuard Order Processor", () => {
     });
   });
 
-  test("generateApologyMessage() includes the customer name and city", () => {
-    const message = generateApologyMessage("Alice Smith", "New York", "Rain");
+  test("generateApologyMessage() uses AI output when the Ollama response is valid", async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        response: JSON.stringify({
+          message: "Hi Alice Smith, your order to New York is delayed due to heavy rain. We appreciate your patience!"
+        })
+      })
+    });
 
+    const message = await generateApologyMessage("Alice Smith", "New York", "Rain", mockFetch);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      OLLAMA_API_URL,
+      expect.objectContaining({
+        method: "POST"
+      })
+    );
     expect(message).toContain("Alice Smith");
     expect(message).toContain("New York");
+  });
+
+  test("generateApologyMessage() falls back to the template if AI is unavailable", async () => {
+    const mockFetch = jest.fn().mockRejectedValue(new Error("connect ECONNREFUSED"));
+
+    const message = await generateApologyMessage("Alice Smith", "New York", "Rain", mockFetch);
+
+    expect(message).toBe(generateTemplateApologyMessage("Alice Smith", "New York", "Rain"));
   });
 
   test("processOrders() processes all four orders and preserves invalid city errors", async () => {
@@ -101,7 +127,11 @@ describe("WeatherGuard Order Processor", () => {
       };
     });
 
-    const results = await processOrders(orders, mockFetch);
+    const mockApologyGenerator = jest.fn(async (customerName, city, weatherCondition) =>
+      `Hi ${customerName}, your order to ${city} is delayed due to ${weatherCondition.toLowerCase()}. We appreciate your patience!`
+    );
+
+    const results = await processOrders(orders, mockFetch, mockApologyGenerator);
 
     expect(results).toHaveLength(4);
     expect(results.filter((result) => !result.weather.error)).toHaveLength(3);

@@ -7,6 +7,8 @@ dotenv.config();
 const INPUT_FILE = path.join(__dirname, "orders.json");
 const OUTPUT_FILE = path.join(__dirname, "updated_orders.json");
 const WEATHER_API_BASE_URL = "https://api.openweathermap.org/data/2.5/weather";
+const OLLAMA_API_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/api/generate";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.1:latest";
 const DELAYED_CONDITIONS = new Set(["Rain", "Snow", "Thunderstorm", "Extreme"]);
 
 function isDelayedCondition(condition) {
@@ -85,10 +87,86 @@ async function fetchWeather(city, fetchImpl = fetch) {
   }
 }
 
-function generateApologyMessage(customerName, city, weatherCondition) {
+function generateTemplateApologyMessage(customerName, city, weatherCondition) {
   const normalizedCondition = String(weatherCondition || "unexpected weather").toLowerCase();
 
   return `Hi ${customerName}, your order to ${city} is delayed due to ${normalizedCondition}. We appreciate your patience!`;
+}
+
+function buildApologyPrompt(customerName, city, weatherCondition) {
+  return [
+    "Write one concise customer apology message for a delayed ecommerce order.",
+    `Customer name: ${customerName}`,
+    `Destination city: ${city}`,
+    `Weather condition: ${weatherCondition}`,
+    "Return JSON with exactly one key named message.",
+    "The message must be one sentence, empathetic, professional, and mention the customer, city, and weather."
+  ].join("\n");
+}
+
+function extractAiMessage(responseText) {
+  const trimmed = String(responseText || "").trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
+
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      if (typeof parsed.message === "string" && parsed.message.trim()) {
+        return parsed.message.trim();
+      }
+    } catch (error) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+async function generateApologyMessage(customerName, city, weatherCondition, fetchImpl = fetch) {
+  try {
+    const response = await fetchImpl(OLLAMA_API_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt: buildApologyPrompt(customerName, city, weatherCondition),
+        format: {
+          type: "object",
+          properties: {
+            message: {
+              type: "string"
+            }
+          },
+          required: ["message"]
+        },
+        stream: false
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error || `Ollama API request failed with status ${response.status}.`);
+    }
+
+    const message = extractAiMessage(data?.response);
+
+    if (!message) {
+      throw new Error("Ollama AI response did not include a valid message.");
+    }
+
+    return message;
+  } catch (error) {
+    return generateTemplateApologyMessage(customerName, city, weatherCondition);
+  }
 }
 
 async function processOrders(orders, fetchImpl = fetch, apologyGenerator = generateApologyMessage) {
@@ -108,7 +186,7 @@ async function processOrders(orders, fetchImpl = fetch, apologyGenerator = gener
         weather,
         status: delayed ? "Delayed" : "Pending",
         apologyMessage: delayed
-          ? apologyGenerator(order.customer, order.city, weather.condition)
+          ? await apologyGenerator(order.customer, order.city, weather.condition, fetchImpl)
           : null
       };
     })
@@ -190,8 +268,13 @@ module.exports = {
   DELAYED_CONDITIONS,
   INPUT_FILE,
   OUTPUT_FILE,
+  OLLAMA_API_URL,
+  OLLAMA_MODEL,
+  buildApologyPrompt,
+  extractAiMessage,
   fetchWeather,
   generateApologyMessage,
+  generateTemplateApologyMessage,
   getLogLine,
   isDelayedCondition,
   loadOrders,
