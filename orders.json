@@ -6,5 +6,7 @@
   { "order_id": "1005", "customer": "Priya Sharma", "city": "Delhi", "status": "Pending" },
   { "order_id": "1006", "customer": "Rohan Mehta", "city": "Bangalore", "status": "Pending" },
   { "order_id": "1007", "customer": "Sneha Iyer", "city": "Chennai", "status": "Pending" },
-  { "order_id": "1008", "customer": "Arjun Das", "city": "Kolkata", "status": "Pending" }
+  { "order_id": "1008", "customer": "Arjun Das", "city": "Kolkata", "status": "Pending" },
+  { "order_id": "1008", "customer": "Arjun Das", "city": "Tehran", "status": "Pending" },
+  { "order_id": "1008", "customer": "Arjun Das", "city": "Haifa", "status": "Pending" }
 ]
