@@ -11,5 +11,5 @@ Generate robust Node.js error handling for a weather-processing script where inv
 ```
 
 ## Notes
-- The implementation uses a deterministic template-based apology generator as the default AI fallback so the script remains runnable without a second paid API dependency.
+- The implementation uses a deterministic template-based apology generator for delayed orders so the project stays runnable without a second external AI dependency.
 - OpenWeatherMap responses are handled per order so one invalid city does not crash the batch.

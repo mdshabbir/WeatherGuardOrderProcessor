@@ -4,7 +4,7 @@
     "customer": "Alice Smith",
     "city": "New York",
     "status": "Pending",
-    "weather_condition": "Clouds",
+    "weather_condition": "Clear",
     "error": null,
     "apology_message": null
   },
@@ -33,6 +33,42 @@
     "status": "Pending",
     "weather_condition": null,
     "error": "City not found",
+    "apology_message": null
+  },
+  {
+    "order_id": "1005",
+    "customer": "Priya Sharma",
+    "city": "Delhi",
+    "status": "Pending",
+    "weather_condition": "Haze",
+    "error": null,
+    "apology_message": null
+  },
+  {
+    "order_id": "1006",
+    "customer": "Rohan Mehta",
+    "city": "Bangalore",
+    "status": "Pending",
+    "weather_condition": "Clear",
+    "error": null,
+    "apology_message": null
+  },
+  {
+    "order_id": "1007",
+    "customer": "Sneha Iyer",
+    "city": "Chennai",
+    "status": "Pending",
+    "weather_condition": "Clouds",
+    "error": null,
+    "apology_message": null
+  },
+  {
+    "order_id": "1008",
+    "customer": "Arjun Das",
+    "city": "Kolkata",
+    "status": "Pending",
+    "weather_condition": "Haze",
+    "error": null,
     "apology_message": null
   }
 ]

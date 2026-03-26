@@ -30,9 +30,9 @@ WeatherGuard Order Processor is a Node.js 18+ command-line application that read
 - Node.js 18: required runtime, includes native `fetch`, and fits the assignment.
 - JavaScript (CommonJS): simple, portable, and straightforward for a CLI script.
 - `dotenv`: standard way to load secrets from `.env`.
-- Jest: widely used test runner and mocking framework for unit and integration tests.
-- GitHub Actions: lightweight CI for install-and-test automation.
-- Docker: portable packaging for local and cloud execution.
+- Jest: lightweight testing with strong mocking support.
+- GitHub Actions: automated CI for install and test validation.
+- Docker: portable runtime packaging.
 
 ### External Dependencies
 - OpenWeatherMap Current Weather API: live weather lookup per city.
@@ -40,12 +40,11 @@ WeatherGuard Order Processor is a Node.js 18+ command-line application that read
 - `jest`: automated testing.
 
 ### Risks and Mitigations
-- API rate limits: keep the request volume small and document usage; add batching or retries later if needed.
-- Network failures: convert request failures into recoverable per-city errors where possible.
+- API rate limits: request weather concurrently for only the required orders and keep the batch small.
+- Network failures: convert request failures into per-city error objects so the batch continues.
 - Invalid city names: return `{ error: "City not found" }` and continue processing.
 - Missing or expired API key: fail fast with a clear operator-facing error.
 - Malformed JSON: stop early with an explicit parsing error.
-- Dependency install failures in CI/runtime: pin major versions and keep the dependency set minimal.
 
 ### Folder Structure
 ```text
@@ -118,7 +117,9 @@ async function run({ inputFile, outputFile, fetchImpl, logger } = {})
 ```text
 ✅ New York: Clear -> On schedule
 ⚠️ Mumbai: Rain -> Delayed
+Message: Hi Bob Jones, your order to Mumbai is delayed due to rain. We appreciate your patience!
 ⚠️ London: Snow -> Delayed
+Message: Hi Charlie Green, your order to London is delayed due to snow. We appreciate your patience!
 ❌ InvalidCity123: City not found
 Saved 4 processed orders to D:\WeatherGuardOrderProcessor\updated_orders.json
 ```
@@ -142,7 +143,7 @@ Saved 4 processed orders to D:\WeatherGuardOrderProcessor\updated_orders.json
     "status": "Delayed",
     "weather_condition": "Rain",
     "error": null,
-    "apology_message": "Hi Bob Jones, your order to Mumbai is delayed due to rain. We appreciate your patience and will keep you updated."
+    "apology_message": "Hi Bob Jones, your order to Mumbai is delayed due to rain. We appreciate your patience!"
   },
   {
     "order_id": "1003",
@@ -151,7 +152,7 @@ Saved 4 processed orders to D:\WeatherGuardOrderProcessor\updated_orders.json
     "status": "Delayed",
     "weather_condition": "Snow",
     "error": null,
-    "apology_message": "Hi Charlie Green, your order to London is delayed due to snow. We appreciate your patience and will keep you updated."
+    "apology_message": "Hi Charlie Green, your order to London is delayed due to snow. We appreciate your patience!"
   },
   {
     "order_id": "1004",

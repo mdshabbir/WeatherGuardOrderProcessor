@@ -77,14 +77,18 @@ async function fetchWeather(city, fetchImpl = fetch) {
       throw error;
     }
 
-    return { city, condition: null, error: error.message };
+    return {
+      city,
+      condition: null,
+      error: error.message || "Weather API request failed."
+    };
   }
 }
 
 function generateApologyMessage(customerName, city, weatherCondition) {
   const normalizedCondition = String(weatherCondition || "unexpected weather").toLowerCase();
 
-  return `Hi ${customerName}, your order to ${city} is delayed due to ${normalizedCondition}. We appreciate your patience and will keep you updated.`;
+  return `Hi ${customerName}, your order to ${city} is delayed due to ${normalizedCondition}. We appreciate your patience!`;
 }
 
 async function processOrders(orders, fetchImpl = fetch, apologyGenerator = generateApologyMessage) {
@@ -92,7 +96,7 @@ async function processOrders(orders, fetchImpl = fetch, apologyGenerator = gener
     throw new Error("processOrders expected an array of orders.");
   }
 
-  const weatherResults = await Promise.all(
+  return Promise.all(
     orders.map(async (order) => {
       const weather = await fetchWeather(order.city, fetchImpl);
       const delayed = weather.condition ? isDelayedCondition(weather.condition) : false;
@@ -109,8 +113,6 @@ async function processOrders(orders, fetchImpl = fetch, apologyGenerator = gener
       };
     })
   );
-
-  return weatherResults;
 }
 
 async function updateAndSaveOrders(orders, results, filePath) {
@@ -162,7 +164,14 @@ async function run({
   }
 
   const results = await processOrders(orders, fetchImpl);
-  results.forEach((result) => logger.log(getLogLine(result)));
+
+  results.forEach((result) => {
+    logger.log(getLogLine(result));
+
+    if (result.apologyMessage) {
+      logger.log(`Message: ${result.apologyMessage}`);
+    }
+  });
 
   const updatedOrders = await updateAndSaveOrders(orders, results, outputFile);
   logger.log(`Saved ${updatedOrders.length} processed orders to ${outputFile}`);
