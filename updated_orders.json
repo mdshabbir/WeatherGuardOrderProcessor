@@ -4,7 +4,7 @@
     "customer": "Alice Smith",
     "city": "New York",
     "status": "Pending",
-    "weather_condition": "Clear",
+    "weather_condition": "Clouds",
     "error": null,
     "apology_message": null
   },
@@ -66,27 +66,36 @@
     "order_id": "1008",
     "customer": "Arjun Das",
     "city": "Kolkata",
-    "status": "Delayed",
-    "weather_condition": "Rain",
+    "status": "Pending",
+    "weather_condition": "Haze",
     "error": null,
-    "apology_message": "We apologize for the delay in your order, Arjun Das, as we're working diligently to get it to you in Haifa despite the challenging rain conditions."
+    "apology_message": null
   },
   {
-    "order_id": "1008",
-    "customer": "Arjun Das",
+    "order_id": "1009",
+    "customer": "Haider",
     "city": "Tehran",
     "status": "Delayed",
     "weather_condition": "Rain",
     "error": null,
-    "apology_message": "We apologize for the delay in your order, Arjun Das, as we're working diligently to get it to you in Haifa despite the challenging rain conditions."
+    "apology_message": "Hi Haider, your order to Tehran is delayed due to heavy rain. We appreciate your patience!"
   },
   {
-    "order_id": "1008",
-    "customer": "Arjun Das",
+    "order_id": "1010",
+    "customer": "Andrew",
     "city": "Haifa",
     "status": "Delayed",
     "weather_condition": "Rain",
     "error": null,
-    "apology_message": "We apologize for the delay in your order, Arjun Das, as we're working diligently to get it to you in Haifa despite the challenging rain conditions."
+    "apology_message": "Hi Andrew, your order to Haifa is delayed due to heavy rain. We appreciate your patience!"
+  },
+  {
+    "order_id": "1011",
+    "customer": "Jhon",
+    "city": "Tealaviv",
+    "status": "Pending",
+    "weather_condition": null,
+    "error": "City not found",
+    "apology_message": null
   }
 ]

@@ -1,6 +1,6 @@
 # WeatherGuard Order Processor
 
-WeatherGuard Order Processor is a Node.js 18+ command-line application that reads pending orders from `orders.json`, fetches live weather from OpenWeatherMap concurrently, flags weather-sensitive orders as delayed, generates AI-assisted apology messages for delayed customers, and writes the results to `updated_orders.json`.
+WeatherGuard Order Processor is a Node.js 18+ command-line application that reads pending orders from `orders.json`, fetches live weather from OpenWeatherMap concurrently, flags weather-sensitive orders as delayed, generates apology messages for delayed customers, and writes the results to `updated_orders.json`.
 
 ## Phase 1: Requirements and Planning
 
@@ -30,7 +30,6 @@ WeatherGuard Order Processor is a Node.js 18+ command-line application that read
 - Node.js 18: required runtime, includes native `fetch`, and fits the assignment.
 - JavaScript (CommonJS): simple, portable, and straightforward for a CLI script.
 - `dotenv`: standard way to load secrets from `.env`.
-- Ollama: local AI runtime for apology message generation.
 - Jest: lightweight testing with strong mocking support.
 - GitHub Actions: automated CI for install and test validation.
 - Docker: portable runtime packaging.
@@ -38,7 +37,6 @@ WeatherGuard Order Processor is a Node.js 18+ command-line application that read
 ### External Dependencies
 - OpenWeatherMap Current Weather API: live weather lookup per city.
 - `dotenv`: environment variable loading.
-- Ollama local API: AI apology generation.
 - `jest`: automated testing.
 
 ### Risks and Mitigations
@@ -46,7 +44,6 @@ WeatherGuard Order Processor is a Node.js 18+ command-line application that read
 - Network failures: convert request failures into per-city error objects so the batch continues.
 - Invalid city names: return `{ error: "City not found" }` and continue processing.
 - Missing or expired API key: fail fast with a clear operator-facing error.
-- AI runtime unavailable: fall back to a deterministic apology template so processing still completes.
 - Malformed JSON: stop early with an explicit parsing error.
 
 ### Folder Structure
@@ -92,7 +89,7 @@ WeatherGuardOrderProcessor/
 async function loadOrders(filePath)
 async function fetchWeather(city, fetchImpl = fetch) // -> { city, condition, error? }
 async function processOrders(orders, fetchImpl = fetch, apologyGenerator = generateApologyMessage)
-async function generateApologyMessage(customerName, city, weatherCondition, fetchImpl = fetch) // -> Promise<string>
+function generateApologyMessage(customerName, city, weatherCondition) // -> string
 async function updateAndSaveOrders(orders, results, filePath)
 async function run({ inputFile, outputFile, fetchImpl, logger } = {})
 ```
@@ -101,7 +98,6 @@ async function run({ inputFile, outputFile, fetchImpl, logger } = {})
 - Invalid city (`404`): return `{ city, condition: null, error: "City not found" }`, keep the order in `Pending`, and continue.
 - Missing API key: throw `OPENWEATHER_API_KEY is missing. Add it to your .env file.` before processing.
 - Expired/invalid API key (`401`): stop execution with `OpenWeatherMap API key is invalid or expired.`
-- Ollama unavailable or invalid AI response: fall back to a deterministic template.
 - Malformed `orders.json`: stop execution with `Malformed JSON in <file>: <parser error>`.
 - Empty order list: log `No orders found. Nothing to process.`, write an empty `updated_orders.json`, and exit cleanly.
 
@@ -121,9 +117,9 @@ async function run({ inputFile, outputFile, fetchImpl, logger } = {})
 ```text
 ✅ New York: Clear -> On schedule
 ⚠️ Mumbai: Rain -> Delayed
-Message: Hi Bob Jones, your order to Mumbai is delayed due to heavy rain. We appreciate your patience!
+Message: Hi Bob, your order to Mumbai is delayed due to heavy rain. We appreciate your patience!
 ⚠️ London: Snow -> Delayed
-Message: Hi Charlie Green, your order to London is delayed due to snow. We appreciate your patience!
+Message: Hi Charlie, your order to London is delayed due to snow. We appreciate your patience!
 ❌ InvalidCity123: City not found
 Saved 4 processed orders to D:\WeatherGuardOrderProcessor\updated_orders.json
 ```
@@ -147,7 +143,7 @@ Saved 4 processed orders to D:\WeatherGuardOrderProcessor\updated_orders.json
     "status": "Delayed",
     "weather_condition": "Rain",
     "error": null,
-    "apology_message": "Hi Bob Jones, your order to Mumbai is delayed due to heavy rain. We appreciate your patience!"
+    "apology_message": "Hi Bob, your order to Mumbai is delayed due to heavy rain. We appreciate your patience!"
   },
   {
     "order_id": "1003",
@@ -156,7 +152,7 @@ Saved 4 processed orders to D:\WeatherGuardOrderProcessor\updated_orders.json
     "status": "Delayed",
     "weather_condition": "Snow",
     "error": null,
-    "apology_message": "Hi Charlie Green, your order to London is delayed due to snow. We appreciate your patience!"
+    "apology_message": "Hi Charlie, your order to London is delayed due to snow. We appreciate your patience!"
   },
   {
     "order_id": "1004",
@@ -194,7 +190,6 @@ Saved 4 processed orders to D:\WeatherGuardOrderProcessor\updated_orders.json
 - Node.js 18 or later
 - npm
 - An OpenWeatherMap API key
-- Ollama installed locally if you want live AI-generated apology messages
 
 ### Installation
 ```bash
@@ -207,10 +202,6 @@ Populate `.env` with your real API key:
 ```env
 OPENWEATHER_API_KEY=your_real_api_key
 ```
-
-Optional local AI runtime:
-- Install Ollama from https://ollama.com/
-- Pull a local model such as `llama3.1:latest`
 
 ### How to Get a Free OpenWeatherMap API Key
 1. Create an account at https://openweathermap.org/.

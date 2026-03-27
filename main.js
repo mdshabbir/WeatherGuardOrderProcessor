@@ -15,6 +15,22 @@ function isDelayedCondition(condition) {
   return DELAYED_CONDITIONS.has(condition);
 }
 
+function getFirstName(customerName) {
+  return String(customerName || "").trim().split(/\s+/)[0] || "Customer";
+}
+
+function getWeatherPhrase(weatherCondition) {
+  const normalized = String(weatherCondition || "").trim().toLowerCase();
+  const phrases = {
+    rain: "heavy rain",
+    snow: "snow",
+    thunderstorm: "thunderstorms",
+    extreme: "extreme weather"
+  };
+
+  return phrases[normalized] || normalized || "unexpected weather";
+}
+
 async function loadOrders(filePath) {
   let rawContent;
 
@@ -88,19 +104,27 @@ async function fetchWeather(city, fetchImpl = fetch) {
 }
 
 function generateTemplateApologyMessage(customerName, city, weatherCondition) {
-  const normalizedCondition = String(weatherCondition || "unexpected weather").toLowerCase();
+  const firstName = getFirstName(customerName);
+  const weatherPhrase = getWeatherPhrase(weatherCondition);
 
-  return `Hi ${customerName}, your order to ${city} is delayed due to ${normalizedCondition}. We appreciate your patience!`;
+  return `Hi ${firstName}, your order to ${city} is delayed due to ${weatherPhrase}. We appreciate your patience!`;
 }
 
 function buildApologyPrompt(customerName, city, weatherCondition) {
+  const firstName = getFirstName(customerName);
+  const weatherPhrase = getWeatherPhrase(weatherCondition);
+
   return [
-    "Write one concise customer apology message for a delayed ecommerce order.",
-    `Customer name: ${customerName}`,
+    "Write one customer apology message for a delayed ecommerce order.",
+    `Customer first name: ${firstName}`,
     `Destination city: ${city}`,
-    `Weather condition: ${weatherCondition}`,
+    `Weather phrase to use: ${weatherPhrase}`,
+    'Required output format: "Hi <first name>, your order to <city> is delayed due to <weather phrase>. We appreciate your patience!"',
     "Return JSON with exactly one key named message.",
-    "The message must be one sentence, empathetic, professional, and mention the customer, city, and weather."
+    "Do not use braces in the message itself.",
+    "Do not reorder the sentence.",
+    "Do not mention any extra advice, safety notes, or additional context.",
+    `Example: "Hi ${firstName}, your order to ${city} is delayed due to ${weatherPhrase}. We appreciate your patience!"`
   ].join("\n");
 }
 
@@ -126,6 +150,18 @@ function extractAiMessage(responseText) {
   }
 
   return null;
+}
+
+function isValidAiApologyMessage(message, customerName, city, weatherCondition) {
+  const firstName = getFirstName(customerName).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedCity = String(city).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedWeather = getWeatherPhrase(weatherCondition).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `^Hi ${firstName}, your order to ${escapedCity} is delayed due to ${escapedWeather}\\. We appreciate your patience!$`,
+    "i"
+  );
+
+  return pattern.test(String(message || "").trim());
 }
 
 async function generateApologyMessage(customerName, city, weatherCondition, fetchImpl = fetch) {
@@ -161,6 +197,10 @@ async function generateApologyMessage(customerName, city, weatherCondition, fetc
 
     if (!message) {
       throw new Error("Ollama AI response did not include a valid message.");
+    }
+
+     if (!isValidAiApologyMessage(message, customerName, city, weatherCondition)) {
+      throw new Error("Ollama AI response did not match the required apology format.");
     }
 
     return message;
@@ -275,7 +315,10 @@ module.exports = {
   fetchWeather,
   generateApologyMessage,
   generateTemplateApologyMessage,
+  getFirstName,
   getLogLine,
+  getWeatherPhrase,
+  isValidAiApologyMessage,
   isDelayedCondition,
   loadOrders,
   processOrders,
