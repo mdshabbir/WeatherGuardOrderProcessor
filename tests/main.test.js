@@ -6,6 +6,9 @@ const {
   fetchWeather,
   generateApologyMessage,
   generateTemplateApologyMessage,
+  getFirstName,
+  getWeatherPhrase,
+  isValidAiApologyMessage,
   processOrders,
   run
 } = require("../main");
@@ -60,7 +63,7 @@ describe("WeatherGuard Order Processor", () => {
       status: 200,
       json: async () => ({
         response: JSON.stringify({
-          message: "Hi Alice Smith, your order to New York is delayed due to heavy rain. We appreciate your patience!"
+          message: "Hi Alice, your order to New York is delayed due to heavy rain. We appreciate your patience!"
         })
       })
     });
@@ -73,7 +76,7 @@ describe("WeatherGuard Order Processor", () => {
         method: "POST"
       })
     );
-    expect(message).toContain("Alice Smith");
+    expect(message).toContain("Hi Alice,");
     expect(message).toContain("New York");
   });
 
@@ -83,6 +86,35 @@ describe("WeatherGuard Order Processor", () => {
     const message = await generateApologyMessage("Alice Smith", "New York", "Rain", mockFetch);
 
     expect(message).toBe(generateTemplateApologyMessage("Alice Smith", "New York", "Rain"));
+  });
+
+  test("generateApologyMessage() falls back to the template if AI returns the wrong format", async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        response: JSON.stringify({
+          message: "We apologize for the delay in shipping your order to Haifa, Andrew, and hope you stay warm and dry amidst this rainy weather."
+        })
+      })
+    });
+
+    const message = await generateApologyMessage("Alice Smith", "New York", "Rain", mockFetch);
+
+    expect(message).toBe("Hi Alice, your order to New York is delayed due to heavy rain. We appreciate your patience!");
+  });
+
+  test("helpers normalize the apology into the required format", () => {
+    expect(getFirstName("Alice Smith")).toBe("Alice");
+    expect(getWeatherPhrase("Rain")).toBe("heavy rain");
+    expect(
+      isValidAiApologyMessage(
+        "Hi Alice, your order to New York is delayed due to heavy rain. We appreciate your patience!",
+        "Alice Smith",
+        "New York",
+        "Rain"
+      )
+    ).toBe(true);
   });
 
   test("processOrders() processes all four orders and preserves invalid city errors", async () => {
@@ -128,7 +160,7 @@ describe("WeatherGuard Order Processor", () => {
     });
 
     const mockApologyGenerator = jest.fn(async (customerName, city, weatherCondition) =>
-      `Hi ${customerName}, your order to ${city} is delayed due to ${weatherCondition.toLowerCase()}. We appreciate your patience!`
+      `Hi ${customerName.split(" ")[0]}, your order to ${city} is delayed due to ${weatherCondition.toLowerCase()}. We appreciate your patience!`
     );
 
     const results = await processOrders(orders, mockFetch, mockApologyGenerator);
